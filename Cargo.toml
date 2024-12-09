@@ -1,0 +1,21 @@
+[package]
+name = "pyano"
+version = "0.1.0"
+description = "A composable, resource-efficient framework for building AI applications locally"
+license = "MIT"
+edition = "2021"
+
+
+[lib]
+name = "pyano"
+path = "src/lib.rs"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+async-trait = "0.1"
+
+
+[dev-dependencies]
+tokio-test = "0.4"

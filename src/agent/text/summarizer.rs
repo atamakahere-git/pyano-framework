@@ -1,13 +1,15 @@
-use crate::model::ModelManager;
+use std::sync::Arc;
+
+use crate::model::ModelManagerImpl;
 use crate::types::common::Message;
 
 pub struct SummarizerAgent {
     name: String,
-    model_manager: ModelManager,
+    model_manager: Arc<ModelManagerImpl>,
 }
 
 impl SummarizerAgent {
-    pub fn new(name: String, model_manager: ModelManager) -> Self {
+    pub fn new(name: String, model_manager: Arc<ModelManagerImpl>) -> Self {
         SummarizerAgent {
             name,
             model_manager,
@@ -21,7 +23,7 @@ impl SummarizerAgent {
     }
 
     pub fn process_with_model(&self) -> Vec<Message> {
-        vec![self.greet(), self.model_manager.hello_world(), Message {
+        vec![self.greet(), Message {
             content: "Processing complete!".to_string(),
         }]
     }

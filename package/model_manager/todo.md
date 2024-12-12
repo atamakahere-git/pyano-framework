@@ -1,0 +1,3 @@
+-   [ ] Provide command line arg for server address
+-   [ ] Provide adapters config directory as command line arg
+-   [ ] hello world

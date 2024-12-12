@@ -1,0 +1,9 @@
+[package]
+name = "pyano-model-manager"
+version = "0.1.0"
+description = "A standalone model manager server"
+edition = "2021"
+
+[dependencies]
+pyano = { path = "../../" }
+tokio = { version = "1.42.0", features = ["full"] }

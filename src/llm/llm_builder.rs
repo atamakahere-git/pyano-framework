@@ -1,4 +1,4 @@
-use crate::llm::options::LLMHTTPCallOptions;
+use super::{ options::LLMHTTPCallOptions, error::LLMError };
 use std::error::Error as StdError; // Importing the correct trait
 use std::pin::Pin;
 use bytes::Bytes;
@@ -83,8 +83,16 @@ impl LLM {
         let resp = self.client
             .post(&format!("{}/completion", server_url))
             .json(&serde_json::Value::Object(json_payload))
-            .send().await?
-            .error_for_status()?;
+            .send().await
+            .map_err(|e| LLMError::RequestFailed(e.to_string()))?
+            .error_for_status()
+            .map_err(|e| {
+                if e.status().map_or(false, |status| status.is_server_error()) {
+                    LLMError::ServerUnavailable(e.to_string())
+                } else {
+                    LLMError::RequestFailed(e.to_string())
+                }
+            })?;
 
         Ok(resp)
     }

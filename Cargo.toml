@@ -16,9 +16,12 @@ serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
 async-trait = "0.1"
 chrono = { version = "0.4.39", features = ["serde"]}
-reqwest = {version = "0.12.9", features = ["json"]}
+reqwest = { version = "0.12.9", features = ["stream", "json"] }
 axum = "0.7.9"
 serde_json = "1.0.133"
+futures = "0.3.31"
+bytes = "1.9.0"
+tokio-stream = "0.1.17"
 
 
 [dev-dependencies]

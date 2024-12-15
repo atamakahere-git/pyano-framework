@@ -10,7 +10,7 @@ use scraper::{ Html, Selector };
 use serde::{ Deserialize, Serialize };
 use serde_json::{ json, Value };
 use url::Url;
-use log::info;
+use log::{ info, error };
 
 use crate::tools::Tool;
 
@@ -81,6 +81,19 @@ impl DuckDuckGoSearchResults {
 
         Ok(results)
     }
+
+    pub fn extract_links_from_results(response: Value) -> Vec<String> {
+        if let Some(results) = response["results"].as_array() {
+            results
+                .iter()
+                .filter_map(|result| result["link"].as_str().map(|s| s.to_string()))
+                .collect()
+        } else {
+            // Log an error or handle cases where "results" is not present or not an array
+            error!("No valid results found in the response.");
+            vec![]
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,12 +118,42 @@ impl Tool for DuckDuckGoSearchResults {
         )
     }
 
-    async fn run(&self, input: Value) -> Result<Value, Box<dyn Error>> {
-        let query = input["query"].as_str().ok_or("Input should be a string in the 'query' field")?;
-        info!("Searching [{}] on DuckDuckGo", query);
+    // async fn run(&self, input: Value) -> Result<Value, Box<dyn Error>> {
+    //     let query = input["query"].as_str().ok_or("Input should be a string in the 'query' field")?;
+    //     info!("Searching [{}] on DuckDuckGo", query);
 
-        let results = self.search(query).await?;
-        Ok(serde_json::to_value(results)?)
+    //     let results = self.search(query).await?;
+    //     Ok(serde_json::to_value(results)?)
+    // }
+
+    async fn run(&self, input: Value) -> Result<Value, Box<dyn Error>> {
+        // Extract the query string from the input
+        let query = input["query"]
+            .as_str()
+            .ok_or("Input must be a JSON object with a 'query' field of type string")?;
+
+        // Call the `search` function and handle its result
+        match self.search(query).await {
+            Ok(results) => {
+                // Convert the results to a JSON value
+                let json_results = serde_json::to_value(results)?;
+                Ok(
+                    json!({
+                    "query": query,
+                    "results": json_results
+                })
+                )
+            }
+            Err(e) => {
+                // Return an error as a JSON object
+                Ok(
+                    json!({
+                    "query": query,
+                    "error": format!("Error performing search: {}", e)
+                })
+                )
+            }
+        }
     }
 
     fn parameters(&self) -> Value {

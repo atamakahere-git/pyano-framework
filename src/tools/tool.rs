@@ -77,14 +77,8 @@ pub trait Tool: Send + Sync {
     /// string is sufficient, the default implementation can be used.
     async fn parse_input(&self, input: &str) -> Value {
         match serde_json::from_str::<Value>(input) {
-            Ok(input) => {
-                if input["input"].is_string() {
-                    Value::String(input["input"].as_str().unwrap().to_string())
-                } else {
-                    Value::String(input.to_string())
-                }
-            }
-            Err(_) => Value::String(input.to_string()),
+            Ok(input) => input, // Return the parsed JSON as a `Value`
+            Err(_) => json!({"query": input}), // Wrap the raw string into a JSON object
         }
     }
 }

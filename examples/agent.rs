@@ -1,6 +1,6 @@
 use std::error::Error as StdError;
-use serde_json::json;
-use log::info;
+use serde_json::{ json, Value };
+use log::{ info, error };
 use pyano::{
     llm::{ options::LLMHTTPCallOptions, llm_builder::LLM },
     agent::{ agent_builder::AgentBuilder, agent_trait::AgentTrait },
@@ -12,10 +12,24 @@ use pyano::{
 async fn main() -> Result<(), Box<dyn StdError>> {
     env_logger::init();
     let ddg = DuckDuckGoSearchResults::default().with_max_results(5);
-    let query = json!("Give me some facts about Peru?");
-    let s = ddg.run(query).await.unwrap();
-    info!("{}", s);
+    let query = json!({"query": "Give me some facts about Peru?"}).to_string();
+    let mut links: Vec<String> = Vec::new(); // Declare links variable outside the block
+    // Fetch links from the DuckDuckGoSearchResults tool
+    let response_value = match ddg.json_call(&query).await {
+        Ok(value) => value,
+        Err(e) => {
+            error!("Error performing search: {}", e);
+            Value::Null
+        }
+    };
 
+    if !response_value.is_null() {
+        links = DuckDuckGoSearchResults::extract_links_from_results(response_value);
+    } else {
+        error!("No valid response received.");
+    }
+
+    print!("{:?}", links);
     // let prompt_template =
     //     "
     //         <|im_start|>system

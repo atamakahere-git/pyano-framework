@@ -2,15 +2,15 @@
 // Original source: [Abraxas-365/langchain-rustsrc/src/tools/duckduckgo/duckduckgo_search.rs].
 // Ensure that the usage complies with the original license terms, if applicable.
 
-
-use std::{collections::HashMap, error::Error};
+use std::{ collections::HashMap, error::Error };
 
 use async_trait::async_trait;
 use reqwest::Client;
-use scraper::{Html, Selector};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use scraper::{ Html, Selector };
+use serde::{ Deserialize, Serialize };
+use serde_json::{ json, Value };
 use url::Url;
+use log::info;
 
 use crate::tools::Tool;
 
@@ -34,13 +34,14 @@ impl DuckDuckGoSearchResults {
         self
     }
 
-    pub async fn search(&self, query: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn search(&self, query: &str) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         let mut url = Url::parse(&self.url)?;
 
         let mut query_params = HashMap::new();
         query_params.insert("q", query);
 
         url.query_pairs_mut().extend_pairs(query_params.iter());
+        info!("Query URL: {}", url);
 
         let response = self.client.get(url).send().await?;
         let body = response.text().await?;
@@ -57,26 +58,17 @@ impl DuckDuckGoSearchResults {
                 let title = result
                     .select(&result_title_selector)
                     .next()
-                    .unwrap()
-                    .text()
-                    .collect::<Vec<_>>()
-                    .join("");
+                    .map_or(String::new(), |el| el.text().collect::<Vec<_>>().join(""));
                 let link = result
                     .select(&result_url_selector)
                     .next()
-                    .unwrap()
-                    .text()
-                    .collect::<Vec<_>>()
-                    .join("")
-                    .trim()
-                    .to_string();
+                    .map_or(String::new(), |el|
+                        el.text().collect::<Vec<_>>().join("").trim().to_string()
+                    );
                 let snippet = result
                     .select(&result_snippet_selector)
                     .next()
-                    .unwrap()
-                    .text()
-                    .collect::<Vec<_>>()
-                    .join("");
+                    .map_or(String::new(), |el| el.text().collect::<Vec<_>>().join(""));
 
                 SearchResult {
                     title,
@@ -87,7 +79,7 @@ impl DuckDuckGoSearchResults {
             .take(self.max_results)
             .collect::<Vec<_>>();
 
-        Ok(serde_json::to_string(&results)?)
+        Ok(results)
     }
 }
 
@@ -109,17 +101,21 @@ impl Tool for DuckDuckGoSearchResults {
             r#""Wrapper for DuckDuckGo Search API. "
 	"Useful for when you need to answer questions about current events. "
 	"Always one of the first options when you need to find information on internet"
-	"Input should be a search query. Output is a JSON array of the query results."#,
+	"Input should be a search query. Output is a JSON array of the query results."#
         )
     }
 
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let input = input.as_str().ok_or("Input should be a string")?;
-        self.search(input).await
+    async fn run(&self, input: Value) -> Result<Value, Box<dyn Error>> {
+        let query = input["query"].as_str().ok_or("Input should be a string in the 'query' field")?;
+        info!("Searching [{}] on DuckDuckGo", query);
+
+        let results = self.search(query).await?;
+        Ok(serde_json::to_value(results)?)
     }
 
     fn parameters(&self) -> Value {
-        let prompt = r#"A wrapper around DuckDuckGo Search.
+        let prompt =
+            r#"A wrapper around DuckDuckGo Search.
             Useful for when you need to answer questions about current events.
             Input should be a search query. Output is a JSON array of the query results."#;
 
@@ -151,11 +147,8 @@ mod tests {
     #[ignore]
     async fn duckduckgosearch_tool() {
         let ddg = DuckDuckGoSearchResults::default().with_max_results(5);
-        let s = ddg
-            .search("Who is the current President of Peru?")
-            .await
-            .unwrap();
+        let s = ddg.search("Who is the current President of Peru?").await.unwrap();
 
-        println!("{}", s);
+        println!("{:?}", s);
     }
 }

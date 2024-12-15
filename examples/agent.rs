@@ -5,6 +5,7 @@ use pyano::{
     llm::{ options::LLMHTTPCallOptions, llm_builder::LLM },
     agent::{ agent_builder::AgentBuilder, agent_trait::AgentTrait },
     tools::DuckDuckGoSearchResults,
+    tools::WebScrapper,
     tools::Tool,
 };
 
@@ -30,6 +31,22 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     }
 
     print!("{:?}", links);
+
+    let scraper = WebScrapper::new();
+
+    let input = json!({
+        "urls": links
+    });
+
+    // Call the scraper and handle the result
+    match scraper.run(input).await {
+        Ok(result) => {
+            println!("Scraping results: {}", result);
+        }
+        Err(e) => {
+            eprintln!("Error occurred: {}", e);
+        }
+    }
     // let prompt_template =
     //     "
     //         <|im_start|>system

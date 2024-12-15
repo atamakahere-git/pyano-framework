@@ -40,26 +40,44 @@ impl Tool for WebScrapper {
     }
 
     async fn run(&self, input: Value) -> Result<Value, Box<dyn Error>> {
-        let url = input["url"]
-            .as_str()
-            .ok_or("Input should contain a valid 'url' field as a string.")?;
+        let urls = input["urls"]
+            .as_array()
+            .ok_or("Input should contain a valid 'urls' field as an array of strings.")?;
 
-        match scrape_url(url).await {
-            Ok(content) =>
-                Ok(
+        let mut results = Vec::new();
+
+        for url in urls {
+            if let Some(url_str) = url.as_str() {
+                let fixed_url = fix_url(url_str);
+
+                match scrape_url(&fixed_url).await {
+                    Ok(content) => {
+                        results.push(
+                            json!({
+                            "url": url_str,
+                            "content": content
+                        })
+                        );
+                    }
+                    Err(e) => {
+                        results.push(
+                            json!({
+                            "url": url_str,
+                            "error": format!("Error scraping {}: {}", url_str, e)
+                        })
+                        );
+                    }
+                }
+            } else {
+                results.push(
                     json!({
-                "url": url,
-                "content": content
-            })
-                ),
-            Err(e) =>
-                Ok(
-                    json!({
-                "url": url,
-                "error": format!("Error scraping {}: {}", url, e)
-            })
-                ),
+                    "error": "Invalid URL format, expected a string."
+                })
+                );
+            }
         }
+
+        Ok(json!({ "results": results }))
     }
 }
 
@@ -70,7 +88,12 @@ impl Into<Arc<dyn Tool>> for WebScrapper {
 }
 
 async fn scrape_url(url: &str) -> Result<String, Box<dyn Error>> {
-    let res = reqwest::get(url).await?.text().await?;
+    let client = reqwest::Client::new();
+    let res = client
+        .get(url)
+        .header("User-Agent", "Mozilla/5.0 (compatible; WebScraper/1.0)")
+        .send().await?
+        .text().await?;
 
     let document = Html::parse_document(&res);
     let body_selector = Selector::parse("body").unwrap();
@@ -98,6 +121,16 @@ fn collect_text_not_in_script(element: &ElementRef, text: &mut Vec<String>) {
         } else if node.value().is_text() {
             text.push(node.value().as_text().unwrap().text.to_string());
         }
+    }
+}
+
+fn fix_url(url: &str) -> String {
+    if url.starts_with("http://") || url.starts_with("https://") {
+        url.to_string()
+    } else if url.starts_with("www.") {
+        format!("https://{}", url)
+    } else {
+        format!("https://www.{}", url)
     }
 }
 

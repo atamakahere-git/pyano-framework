@@ -7,9 +7,11 @@
 use crate::llm::llm_builder::LLM;
 use std::error::Error as StdError; // Importing the correct trait
 use std::pin::Pin;
+
 pub trait AgentTrait: Send + Sync {
     fn system_prompt(&self) -> Option<&String>;
     fn user_prompt(&self) -> Option<&String>;
+    fn set_user_prompt(&mut self, prompt: String);
     fn stream(&self) -> bool;
     fn llm(&self) -> Option<&LLM>;
     fn name(&self) -> Option<&String>;
@@ -18,9 +20,10 @@ pub trait AgentTrait: Send + Sync {
         &self
     ) -> Pin<
         Box<
-            dyn std::future::Future<Output = Result<(), Box<dyn StdError + Send + Sync>>> +
+            dyn std::future::Future<Output = Result<String, Box<dyn StdError + Send + Sync>>> +
                 Send +
                 '_
         >
     >;
+    fn get_tools(&self) -> String;
 }

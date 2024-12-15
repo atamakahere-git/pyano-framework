@@ -1,11 +1,14 @@
 use crate::llm::llm_builder::LLM;
 use super::agent::Agent;
+use crate::tools::Tool;
+use std::sync::Arc;
 pub struct AgentBuilder {
     system_prompt: Option<String>,
     user_prompt: Option<String>,
     stream: Option<bool>,
     llm: Option<LLM>,
     name: Option<String>,
+    tools: Option<Vec<Arc<dyn Tool>>>, // New field for tools
 }
 
 impl AgentBuilder {
@@ -16,6 +19,7 @@ impl AgentBuilder {
             stream: Some(false),
             llm: None,
             name: None,
+            tools: None, // Initialize tools as None
         }
     }
 
@@ -44,6 +48,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn with_tools(mut self, tools: Vec<Arc<dyn Tool>>) -> Self {
+        self.tools = Some(tools);
+        self
+    }
+
     pub fn build(self) -> Agent {
         if self.llm.is_none() {
             panic!("LLM must be provided before building the Agent");
@@ -61,6 +70,7 @@ impl AgentBuilder {
             stream: self.stream,
             llm: self.llm,
             name: self.name,
+            tools: self.tools, // Set tools field
         }
     }
 }

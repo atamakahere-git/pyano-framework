@@ -4,6 +4,8 @@ use std::pin::Pin;
 use bytes::Bytes;
 use futures::{ Stream, StreamExt }; // Ensure StreamExt is imported
 use std::sync::Arc;
+
+#[derive(Clone)]
 pub struct LLM {
     client: reqwest::Client,
     options: LLMHTTPCallOptions,

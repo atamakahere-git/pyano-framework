@@ -4,10 +4,10 @@ use std::sync::{ Arc, Mutex };
 
 #[derive(Clone)]
 pub struct ExecutionRecord {
-    agent_name: String,
-    input: String,
-    output: String,
-    timestamp: std::time::SystemTime,
+    pub agent_name: String,
+    pub input: String,
+    pub output: String,
+    pub timestamp: std::time::SystemTime,
 }
 
 pub trait ExecutionRecorder: Send + Sync {
@@ -51,6 +51,7 @@ impl Chain {
 
         for agent in &self.agents {
             let mut agent = agent.lock().unwrap();
+            println!("EXECUTIN = {:?}", agent.name());
 
             // If we have a previous output, set it as the user prompt for the current agent.
             if let Some(output) = &previous_output {

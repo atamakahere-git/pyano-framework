@@ -10,6 +10,7 @@ pub struct LLMServerOptions {
     pub repetition_penalty: Option<f32>,
 }
 
+#[derive(Clone)]
 pub struct LLMHTTPCallOptions {
     pub max_tokens: Option<u32>,
     pub temperature: Option<f32>,

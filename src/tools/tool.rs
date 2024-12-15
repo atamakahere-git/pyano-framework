@@ -19,15 +19,23 @@ pub trait Tool: Send + Sync {
     /// You should return a jsnon like this one
     /// ```json
     /// {
-    ///     "type": "object",
-    ///     "properties": {
-    ///         "command": {
-    ///             "type": "string",
-    ///             "description": "The raw command you want executed"
-    ///                 }
-    ///     },
-    ///     "required": ["command"]
-    /// }
+    //     "type": "function",
+    //     "function": {
+    //         "name": "retrieve_documents",
+    //         "description": "Retrieve documents from the vector store based on the query.",
+    //         "parameters": {
+    //             "type": "object",
+    //             "properties": {
+    //                 "query": {
+    //                     "type": "string"
+    //                 }
+    //             },
+    //             "required": [
+    //                 "query"
+    //             ]
+    //         }
+    //     }
+    // },
     ///
     /// If there s no implementation the defaul will be the self.description()
     ///```

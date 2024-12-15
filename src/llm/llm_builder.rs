@@ -3,10 +3,19 @@ use std::error::Error as StdError; // Importing the correct trait
 use std::pin::Pin;
 use bytes::Bytes;
 use futures::{ Stream, StreamExt }; // Ensure StreamExt is imported
-
+use std::sync::Arc;
 pub struct LLM {
     client: reqwest::Client,
     options: LLMHTTPCallOptions,
+    process_response: Option<
+        Arc<
+            dyn (Fn(
+                Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>
+            ) -> Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>) +
+                Send +
+                Sync
+        >
+    >,
 }
 
 impl LLM {
@@ -97,6 +106,38 @@ impl LLM {
         Ok(resp)
     }
 
+    // pub async fn response_stream(
+    //     &self,
+    //     prompt_with_context: &str,
+    //     system_prompt: &str
+    // ) -> Result<
+    //     Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
+    //     Box<dyn StdError + Send + Sync + 'static>
+    // > {
+    //     let resp = self.prepare_request(prompt_with_context, system_prompt, true).await?;
+
+    //     let (tx, rx) = tokio::sync::mpsc::channel(100);
+
+    //     tokio::spawn(async move {
+    //         let mut stream = resp.bytes_stream(); // Use `bytes_stream` as `chunk` method is not available for all reqwest versions
+    //         while let Some(chunk) = stream.next().await {
+    //             match chunk {
+    //                 Ok(bytes) => {
+    //                     if tx.send(Ok(bytes)).await.is_err() {
+    //                         eprintln!("Receiver dropped");
+    //                         break;
+    //                     }
+    //                 }
+    //                 Err(e) => {
+    //                     let _ = tx.send(Err(e)).await;
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     });
+
+    //     Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
+    // }
     pub async fn response_stream(
         &self,
         prompt_with_context: &str,
@@ -107,27 +148,14 @@ impl LLM {
     > {
         let resp = self.prepare_request(prompt_with_context, system_prompt, true).await?;
 
-        let (tx, rx) = tokio::sync::mpsc::channel(100);
+        let stream = resp.bytes_stream();
+        let processed_stream = if let Some(process_fn) = &self.process_response {
+            process_fn(Box::pin(stream))
+        } else {
+            Box::pin(stream)
+        };
 
-        tokio::spawn(async move {
-            let mut stream = resp.bytes_stream(); // Use `bytes_stream` as `chunk` method is not available for all reqwest versions
-            while let Some(chunk) = stream.next().await {
-                match chunk {
-                    Ok(bytes) => {
-                        if tx.send(Ok(bytes)).await.is_err() {
-                            eprintln!("Receiver dropped");
-                            break;
-                        }
-                    }
-                    Err(e) => {
-                        let _ = tx.send(Err(e)).await;
-                        break;
-                    }
-                }
-            }
-        });
-
-        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
+        Ok(processed_stream)
     }
 
     pub async fn response(
@@ -143,12 +171,22 @@ impl LLM {
 
 pub struct LLMBuilder {
     options: LLMHTTPCallOptions,
+    process_response: Option<
+        Arc<
+            dyn (Fn(
+                Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>
+            ) -> Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>) +
+                Send +
+                Sync
+        >
+    >,
 }
 
 impl Default for LLMBuilder {
     fn default() -> Self {
         LLMBuilder {
             options: LLMHTTPCallOptions::new(),
+            process_response: None, // Default to no custom processing
         }
     }
 }
@@ -159,10 +197,24 @@ impl LLMBuilder {
         self
     }
 
+    pub fn with_process_response<F>(mut self, process_fn: F) -> Self
+        where
+            F: Fn(
+                Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>
+            ) -> Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>> +
+                Send +
+                Sync +
+                'static
+    {
+        self.process_response = Some(Arc::new(process_fn));
+        self
+    }
+
     pub fn build(self) -> LLM {
         LLM {
             client: reqwest::Client::new(),
             options: self.options.build(),
+            process_response: self.process_response,
         }
     }
 }

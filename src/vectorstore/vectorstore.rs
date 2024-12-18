@@ -2,7 +2,7 @@ use std::error::Error;
 
 use async_trait::async_trait;
 
-use crate::schemas::{ self, Document };
+use crate::schemas::{ retriever::Retriever, document::Document };
 
 use super::VecStoreOptions;
 
@@ -54,14 +54,14 @@ macro_rules! similarity_search {
 }
 
 // Retriever is a retriever for vector stores.
-pub struct Retriever {
+pub struct DocumentRetriever {
     vstore: Box<dyn VectorStore>,
     num_docs: usize,
     options: VecStoreOptions,
 }
-impl Retriever {
+impl DocumentRetriever {
     pub fn new<V: Into<Box<dyn VectorStore>>>(vstore: V, num_docs: usize) -> Self {
-        Retriever {
+        DocumentRetriever {
             vstore: vstore.into(),
             num_docs,
             options: VecStoreOptions::default(),
@@ -75,7 +75,7 @@ impl Retriever {
 }
 
 #[async_trait]
-impl schemas::Retriever for Retriever {
+impl Retriever for DocumentRetriever {
     async fn get_relevant_documents(&self, query: &str) -> Result<Vec<Document>, Box<dyn Error>> {
         self.vstore.similarity_search(query, self.num_docs, &self.options).await
     }

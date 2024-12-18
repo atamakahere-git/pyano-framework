@@ -37,9 +37,9 @@ impl EmbeddingModels {
 
     pub fn model_path(&self) -> String {
         match self {
-            EmbeddingModels::Text(model) => ".pyano/models/text".to_string(),
+            EmbeddingModels::Text(_model) => ".pyano/models/text".to_string(),
 
-            EmbeddingModels::Image(model) => ".pyano/models/image".to_string(),
+            EmbeddingModels::Image(_model) => ".pyano/models/image".to_string(),
         }
     }
 
@@ -48,7 +48,21 @@ impl EmbeddingModels {
         match self {
             EmbeddingModels::Text(model) =>
                 match model {
-                    TextEmbeddingModels::MiniLM =>
+                    TextEmbeddingModels::MiniLMV6 =>
+                        &[
+                            "1_Pooling/config.json",
+                            "config.json",
+                            "config_sentence_transformers.json",
+                            "data_config.json",
+                            "modules.json",
+                            "rust_model.ot",
+                            "sentence_bert_config.json",
+                            "special_tokens_map.json",
+                            "tokenizer.json",
+                            "tokenizer_config.json",
+                            "vocab.txt",
+                        ],
+                    TextEmbeddingModels::MiniLMV12 =>
                         &[
                             "1_Pooling/config.json",
                             "config.json",

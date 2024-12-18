@@ -1,5 +1,10 @@
 /// The builder that allows configuring which model to use, which texts to embed,
 /// and then either returns a configured `DefaultEmbedder` or directly generates embeddings.
+
+use super::embedding_models::EmbeddingModels;
+use super::embedder::DefaultEmbedder;
+use dirs;
+
 pub struct EmbeddingBuilder {
     model: EmbeddingModels,
     texts: Vec<String>,
@@ -43,17 +48,5 @@ impl EmbeddingBuilder {
                 .map(|f| f.to_string())
                 .collect()
         )
-    }
-
-    /// Directly build an embedder and generate embeddings for the texts added so far.
-    /// Returns a Vec of embeddings (one Vec<f32> per input text).
-    pub async fn embed_all(self) -> Result<Vec<Vec<f32>>, EmbedderError> {
-        let embedder = self.build_embedder();
-        let mut results = Vec::new();
-        for txt in self.texts {
-            let embedding = embedder.generate_embeddings(&txt).await?;
-            results.push(embedding);
-        }
-        Ok(results)
     }
 }

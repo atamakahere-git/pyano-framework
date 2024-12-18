@@ -1,3 +1,5 @@
+use std::pin::Pin;
+
 use log::info;
 use bytes::Bytes;
 
@@ -6,6 +8,9 @@ use serde::Deserialize;
 
 use futures::{ Stream, StreamExt }; // Ensure StreamExt is imported
 use serde_json::Value;
+
+type StreamResult = Result<Bytes, reqwest::Error>;
+type BoxedStream = Pin<Box<dyn Stream<Item = StreamResult> + Send>>;
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -20,37 +25,39 @@ struct LLMGenerattionTimings {
     prompt_per_token_ms: f64,
 }
 
-pub fn llamacpp_process_stream<'a>(
-    stream: impl Stream<Item = Result<Bytes, reqwest::Error>> + Unpin + 'a
-) -> impl Stream<Item = Result<Bytes, reqwest::Error>> + 'a {
-    let acc = String::new(); // Initialize accumulator
+pub fn llamacpp_process_stream<'a>(stream: BoxedStream) -> BoxedStream {
+    Box::pin(
+        futures::stream::unfold((stream, String::new()), |(mut stream, acc)| async move {
+            if let Some(chunk_result) = stream.next().await {
+                match chunk_result {
+                    Ok(chunk) => {
+                        if let Ok(chunk_str) = std::str::from_utf8(&chunk) {
+                            let content_to_stream = process_chunk(chunk_str).await;
 
-    futures::stream::unfold((stream, acc), |(mut stream, acc)| async move {
-        if let Some(chunk_result) = stream.next().await {
-            match chunk_result {
-                Ok(chunk) => {
-                    if let Ok(chunk_str) = std::str::from_utf8(&chunk) {
-                        let content_to_stream = process_chunk(chunk_str).await;
-
-                        if !content_to_stream.is_empty() {
-                            return Some((Ok(Bytes::from(content_to_stream)), (stream, acc)));
+                            if !content_to_stream.is_empty() {
+                                return Some((Ok(Bytes::from(content_to_stream)), (stream, acc)));
+                            }
+                        } else {
+                            eprintln!("Failed to parse chunk as UTF-8");
                         }
-                    } else {
-                        eprintln!("Failed to parse chunk as UTF-8");
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving chunk: {}", e);
+                        return Some((Err(e), (stream, acc)));
                     }
                 }
-                Err(e) => {
-                    eprintln!("Error receiving chunk: {}", e);
-                    return Some((Err(e), (stream, acc)));
-                }
+            } else {
+                return None;
             }
-        } else {
-            // End of stream
-            return None;
-        }
 
-        Some((Ok(Bytes::new()), (stream, acc)))
-    })
+            Some((Ok(Bytes::new()), (stream, acc)))
+        })
+    )
+}
+
+pub fn qwen_process_stream(stream: BoxedStream) -> BoxedStream {
+    // For now, using the same implementation as llamacpp
+    llamacpp_process_stream(stream)
 }
 
 async fn process_chunk(chunk_str: &str) -> String {

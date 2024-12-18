@@ -1,4 +1,6 @@
 use std::error::Error as StdError;
+use log::info;
+
 use crate::agent::agent_trait::AgentTrait;
 use std::sync::{ Arc, Mutex };
 
@@ -51,7 +53,7 @@ impl Chain {
 
         for agent in &self.agents {
             let mut agent = agent.lock().unwrap();
-            println!("EXECUTIN = {:?}", agent.name());
+            info!("EXECUTING Agent = {:?}", agent.name());
 
             // If we have a previous output, set it as the user prompt for the current agent.
             if let Some(output) = &previous_output {

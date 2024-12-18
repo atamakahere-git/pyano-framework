@@ -1,8 +1,12 @@
+use crate::model::error::ModelError;
+use crate::model::{ ModelManagerInterface, ModelStatus };
+
 use super::{ options::LLMHTTPCallOptions, error::LLMError };
 use std::error::Error as StdError; // Importing the correct trait
 use std::pin::Pin;
 use bytes::Bytes;
-use futures::{ Stream, StreamExt }; // Ensure StreamExt is imported
+use futures::Stream;
+use log::info; // Ensure StreamExt is imported
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -18,6 +22,9 @@ pub struct LLM {
                 Sync
         >
     >,
+    model_manager: Option<Arc<dyn ModelManagerInterface>>,
+    model_name: Option<String>,
+    auto_load: bool,
 }
 
 impl LLM {
@@ -108,38 +115,6 @@ impl LLM {
         Ok(resp)
     }
 
-    // pub async fn response_stream(
-    //     &self,
-    //     prompt_with_context: &str,
-    //     system_prompt: &str
-    // ) -> Result<
-    //     Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
-    //     Box<dyn StdError + Send + Sync + 'static>
-    // > {
-    //     let resp = self.prepare_request(prompt_with_context, system_prompt, true).await?;
-
-    //     let (tx, rx) = tokio::sync::mpsc::channel(100);
-
-    //     tokio::spawn(async move {
-    //         let mut stream = resp.bytes_stream(); // Use `bytes_stream` as `chunk` method is not available for all reqwest versions
-    //         while let Some(chunk) = stream.next().await {
-    //             match chunk {
-    //                 Ok(bytes) => {
-    //                     if tx.send(Ok(bytes)).await.is_err() {
-    //                         eprintln!("Receiver dropped");
-    //                         break;
-    //                     }
-    //                 }
-    //                 Err(e) => {
-    //                     let _ = tx.send(Err(e)).await;
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     });
-
-    //     Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
-    // }
     pub async fn response_stream(
         &self,
         prompt_with_context: &str,
@@ -148,6 +123,9 @@ impl LLM {
         Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
         Box<dyn StdError + Send + Sync + 'static>
     > {
+        info!("Response stream not wating");
+        self.ensure_model_loaded().await?;
+
         let resp = self.prepare_request(prompt_with_context, system_prompt, true).await?;
 
         let stream = resp.bytes_stream();
@@ -165,9 +143,60 @@ impl LLM {
         prompt_with_context: &str,
         system_prompt: &str
     ) -> Result<serde_json::Value, Box<dyn StdError + Send + Sync + 'static>> {
+        self.ensure_model_loaded().await?;
+
         let resp = self.prepare_request(prompt_with_context, system_prompt, false).await?;
         let response_json = resp.json::<serde_json::Value>().await?;
         Ok(response_json)
+    }
+
+    async fn ensure_model_loaded(&self) -> Result<(), Box<dyn StdError + Send + Sync>> {
+        info!("Checking model status");
+        if let (Some(manager), Some(name)) = (&self.model_manager, &self.model_name) {
+            let should_load = match manager.get_model_status(name).await {
+                Ok(ModelStatus::Running) => {
+                    info!("Model {} is already running", name);
+                    false
+                }
+                Ok(status) => {
+                    info!("Model {} has status {:?}, will attempt to load", name, status);
+                    true
+                }
+                Err(ModelError::ModelNotFound(_)) => {
+                    info!("Model {} not found, will attempt to load", name);
+                    true
+                }
+                Err(e) => {
+                    info!("Unexpected error checking model status: {:?}", e);
+                    return Err(Box::new(e));
+                }
+            };
+
+            if should_load {
+                info!("Loading model {}", name);
+                manager.load_model_by_name(name).await?;
+
+                // Verify the model loaded successfully
+                (match manager.get_model_status(name).await {
+                    Ok(ModelStatus::Running) => {
+                        info!("Model {} loaded successfully", name);
+                        Ok(())
+                    }
+                    Ok(status) => {
+                        Err(
+                            Box::new(
+                                ModelError::ProcessError(
+                                    format!("Failed to load model: {}. Status: {:?}", name, status)
+                                )
+                            )
+                        )
+                    }
+                    Err(e) => Err(Box::new(e)),
+                })?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -182,6 +211,10 @@ pub struct LLMBuilder {
                 Sync
         >
     >,
+
+    model_manager: Option<Arc<dyn ModelManagerInterface>>,
+    model_name: Option<String>,
+    auto_load: bool,
 }
 
 impl Default for LLMBuilder {
@@ -189,11 +222,26 @@ impl Default for LLMBuilder {
         LLMBuilder {
             options: LLMHTTPCallOptions::new(),
             process_response: None, // Default to no custom processing
+            auto_load: false,
+            model_manager: None,
+            model_name: None,
         }
     }
 }
 
 impl LLMBuilder {
+    pub fn with_model_manager(
+        mut self,
+        manager: Arc<dyn ModelManagerInterface>,
+        model_name: String,
+        auto_load: bool
+    ) -> Self {
+        self.model_manager = Some(manager);
+        self.model_name = Some(model_name);
+        self.auto_load = auto_load;
+        self
+    }
+
     pub fn with_options(mut self, options: LLMHTTPCallOptions) -> Self {
         self.options = options;
         self
@@ -217,6 +265,9 @@ impl LLMBuilder {
             client: reqwest::Client::new(),
             options: self.options.build(),
             process_response: self.process_response,
+            model_manager: self.model_manager,
+            model_name: self.model_name,
+            auto_load: self.auto_load,
         }
     }
 }

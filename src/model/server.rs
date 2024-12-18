@@ -12,20 +12,19 @@ use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use serde_json::json;
 
-use crate::model::error::{ ModelError, Result };
-use crate::model::manager::ModelManager;
-use super::{ ModelConfig, ModelInfo, ModelManagerImpl, ModelStatus };
+use crate::model::error::{ ModelError, ModelResult };
+use super::{ ModelConfig, ModelManager };
 
 pub struct ModelManagerServer {
-    manager: Arc<ModelManagerImpl>,
+    manager: Arc<ModelManager>,
 }
 
 impl ModelManagerServer {
-    pub fn new(manager: Arc<ModelManagerImpl>) -> Self {
+    pub fn new(manager: Arc<ModelManager>) -> Self {
         Self { manager }
     }
 
-    pub async fn run(self, addr: &str) -> Result<()> {
+    pub async fn run(self, addr: &str) -> ModelResult<()> {
         let app = Router::new()
             .route("/models/load", post(Self::handle_load_model))
             .route("/models/unload", post(Self::handle_unload_model))
@@ -50,7 +49,7 @@ impl ModelManagerServer {
     }
 
     async fn handle_load_model(
-        State(manager): State<Arc<ModelManagerImpl>>,
+        State(manager): State<Arc<ModelManager>>,
         Json(config): Json<ModelConfig>
     ) -> impl IntoResponse {
         match manager.load_model(config).await {
@@ -64,7 +63,7 @@ impl ModelManagerServer {
     }
 
     async fn handle_unload_model(
-        State(manager): State<Arc<ModelManagerImpl>>,
+        State(manager): State<Arc<ModelManager>>,
         Json(name): Json<String>
     ) -> impl IntoResponse {
         match manager.unload_model(&name).await {
@@ -78,7 +77,7 @@ impl ModelManagerServer {
     }
 
     async fn handle_get_status(
-        State(manager): State<Arc<ModelManagerImpl>>,
+        State(manager): State<Arc<ModelManager>>,
         axum::extract::Path(name): axum::extract::Path<String>
     ) -> impl IntoResponse {
         match manager.get_model_status(&name).await {
@@ -91,7 +90,7 @@ impl ModelManagerServer {
         }
     }
 
-    async fn handle_list_models(State(manager): State<Arc<ModelManagerImpl>>) -> impl IntoResponse {
+    async fn handle_list_models(State(manager): State<Arc<ModelManager>>) -> impl IntoResponse {
         match manager.list_models().await {
             Ok(models) => (StatusCode::OK, Json(models)).into_response(),
             Err(e) =>

@@ -4,5 +4,5 @@ pub mod types;
 pub mod llm;
 pub mod tools;
 pub mod chain;
-pub use model::manager::{ ModelManager, ModelManagerImpl };
+pub use model::manager::ModelManager;
 pub use types::*;

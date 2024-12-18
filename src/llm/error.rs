@@ -1,3 +1,4 @@
+// src/llm/error.rs
 use thiserror::Error; // For custom error handling
 
 #[derive(Error, Debug)]

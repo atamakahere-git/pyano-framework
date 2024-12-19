@@ -23,7 +23,7 @@ impl EmbeddingModels {
                         "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/"
                     }
                     TextEmbeddingModels::MiniLMV12 => {
-                        "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/"
+                        "https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2/resolve/main/"
                     }
                 }
             EmbeddingModels::Image(model) =>
@@ -37,9 +37,9 @@ impl EmbeddingModels {
 
     pub fn model_path(&self) -> String {
         match self {
-            EmbeddingModels::Text(_model) => ".pyano/models/text".to_string(),
+            EmbeddingModels::Text(_model) => ".pyano/models/embed_model/text".to_string(),
 
-            EmbeddingModels::Image(_model) => ".pyano/models/image".to_string(),
+            EmbeddingModels::Image(_model) => ".pyano/models/embed_model/image".to_string(),
         }
     }
 
@@ -88,6 +88,20 @@ impl EmbeddingModels {
                             "tokenizer.json",
                             "vocab.json",
                         ],
+                }
+        }
+    }
+
+    pub fn model_name(&self) -> &str {
+        match self {
+            EmbeddingModels::Text(model) =>
+                match model {
+                    TextEmbeddingModels::MiniLMV6 => "MiniLMV6",
+                    TextEmbeddingModels::MiniLMV12 => "MiniLMV12",
+                }
+            EmbeddingModels::Image(model) =>
+                match model {
+                    ImageEmbeddingModels::CLIP => "CLIP",
                 }
         }
     }

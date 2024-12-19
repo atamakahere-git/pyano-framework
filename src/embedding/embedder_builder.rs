@@ -40,6 +40,7 @@ impl EmbeddingBuilder {
             .join(self.model.model_path());
 
         DefaultEmbedder::new(
+            self.model.model_name(),
             &model_path,
             self.model.base_url(),
             self.model

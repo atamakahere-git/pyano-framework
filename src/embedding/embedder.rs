@@ -23,9 +23,11 @@ pub struct DefaultEmbedder {
 }
 
 impl DefaultEmbedder {
-    pub fn new(model_path: &Path, base_url: &str, files: Vec<String>) -> Self {
+    pub fn new(model_name: &str, model_path: &Path, base_url: &str, files: Vec<String>) -> Self {
+        let save_path = model_path.join(model_name);
+
         Self {
-            model_path: model_path.to_path_buf(),
+            model_path: save_path.to_path_buf(),
             base_url: base_url.to_string(),
             files,
             cached_model: OnceCell::new(),

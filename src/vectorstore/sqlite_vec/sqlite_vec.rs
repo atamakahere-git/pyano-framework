@@ -6,7 +6,7 @@ use sqlx::{ Pool, Row, Sqlite };
 
 use crate::{
     embedding::embedder_trait::Embedder,
-    schemas::Document,
+    schemas::document::Document,
     vectorstore::{ VecStoreOptions, VectorStore },
 };
 
@@ -99,14 +99,14 @@ impl VectorStore for Store {
         docs: &[Document],
         opt: &VecStoreOptions
     ) -> Result<Vec<String>, Box<dyn Error>> {
-        let texts: Vec<String> = docs
+        let texts: Vec<&str> = docs
             .iter()
-            .map(|d| d.page_content.clone())
+            .map(|d| d.page_content.as_str())
             .collect();
 
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);
 
-        let vectors = embedder.embed_documents(&texts).await?;
+        let vectors = embedder.generate_embeddings_on_demand(&texts).await?;
         if vectors.len() != docs.len() {
             return Err(
                 Box::new(
@@ -158,7 +158,7 @@ impl VectorStore for Store {
     ) -> Result<Vec<Document>, Box<dyn Error>> {
         let table = &self.table;
 
-        let query_vector = json!(self.embedder.embed_query(query).await?);
+        let query_vector = json!(self.embedder.generate_embeddings_on_demand(&[query]).await?);
 
         let filter = self.get_filters(opt)?;
 

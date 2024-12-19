@@ -2,7 +2,7 @@ use std::{ error::Error, str::FromStr, sync::Arc };
 
 use sqlx::{ sqlite::{ SqliteConnectOptions, SqlitePoolOptions }, Pool, Sqlite };
 
-use super::Store;
+use super::sqlite_vec::Store;
 use crate::embedding::embedder_trait::Embedder;
 
 pub struct StoreBuilder {

@@ -57,11 +57,6 @@ impl StoreBuilder {
         self
     }
 
-    pub fn vector_dimensions(mut self, vector_dimensions: i32) -> Self {
-        self.vector_dimensions = vector_dimensions;
-        self
-    }
-
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
@@ -80,7 +75,6 @@ impl StoreBuilder {
         Ok(Store {
             pool: self.get_pool().await?,
             table: self.table,
-            vector_dimensions: self.vector_dimensions,
             embedder: self.embedder.unwrap(),
         })
     }

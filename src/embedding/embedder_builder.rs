@@ -44,6 +44,7 @@ impl EmbeddingBuilder {
         let embbedder = DefaultEmbedder::new(
             self.model.model_name(),
             &model_path,
+            self.model.clone(),
             self.model.base_url(),
             self.model
                 .required_files()

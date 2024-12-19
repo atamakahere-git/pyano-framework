@@ -13,7 +13,6 @@ use crate::{
 pub struct Store {
     pub pool: Pool<Sqlite>,
     pub(crate) table: String,
-    pub(crate) vector_dimensions: i32,
     pub(crate) embedder: Arc<dyn Embedder>,
 }
 
@@ -43,7 +42,7 @@ impl Store {
             )
             .execute(&self.pool).await?;
 
-        let dimensions = self.vector_dimensions;
+        let dimensions = self.embedder.dimensions();
         sqlx
             ::query(
                 &format!(

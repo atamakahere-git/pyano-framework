@@ -27,4 +27,6 @@ pub trait Embedder: Send + Sync {
         &self,
         text: &[&str]
     ) -> Result<Vec<Vec<f32>>, EmbedderError>;
+
+    fn dimensions(&self) -> i32;
 }

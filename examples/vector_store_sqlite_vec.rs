@@ -17,7 +17,6 @@ use std::io::Write;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize Embedder
     let model = EmbeddingModels::Text(TextEmbeddingModels::MiniLMV6);
-
     // Create an embedding builder with the chosen model
     let embedder = EmbeddingBuilder::new(model).build_embedder().await?;
 
@@ -26,7 +25,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .embedder(embedder)
         .db_name("micro_app")
         .table("documents")
-        .vector_dimensions(1536)
         .build().await
         .unwrap();
 

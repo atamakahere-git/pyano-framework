@@ -14,19 +14,28 @@ use rust_bert::pipelines::sentence_embeddings::{
 use tokio::task;
 use tch::Device;
 
+use super::embedding_models::EmbeddingModels;
+
 pub struct DefaultEmbedder {
+    model: EmbeddingModels,
     model_path: PathBuf,
     base_url: String,
     files: Vec<String>,
-    // Optional cached model using OnceCell for thread-safe lazy initialization
     cached_model: OnceCell<Arc<Mutex<SentenceEmbeddingsModel>>>,
 }
 
 impl DefaultEmbedder {
-    pub fn new(model_name: &str, model_path: &Path, base_url: &str, files: Vec<String>) -> Self {
+    pub fn new(
+        model_name: &str,
+        model_path: &Path,
+        model: EmbeddingModels,
+        base_url: &str,
+        files: Vec<String>
+    ) -> Self {
         let save_path = model_path.join(model_name);
 
         Self {
+            model,
             model_path: save_path.to_path_buf(),
             base_url: base_url.to_string(),
             files,
@@ -163,5 +172,9 @@ impl Embedder for DefaultEmbedder {
             .map_err(|e| EmbedderError::RustBertError(e))?;
 
         Ok(embedding)
+    }
+
+    fn dimensions(&self) -> i32 {
+        self.model.dimensions()
     }
 }

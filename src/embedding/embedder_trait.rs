@@ -17,8 +17,14 @@ pub trait Embedder: Send + Sync {
     async fn initialize(&self) -> Result<(), EmbedderError>;
 
     /// Generates embeddings using the cached model.
-    async fn generate_embeddings_with_cache(&self, text: &str) -> Result<Vec<f32>, EmbedderError>;
+    async fn generate_embeddings_with_cache(
+        &self,
+        text: &[&str]
+    ) -> Result<Vec<Vec<f32>>, EmbedderError>;
 
     /// Generates embeddings by loading the model on demand.
-    async fn generate_embeddings_on_demand(&self, text: &str) -> Result<Vec<f32>, EmbedderError>;
+    async fn generate_embeddings_on_demand(
+        &self,
+        text: &[&str]
+    ) -> Result<Vec<Vec<f32>>, EmbedderError>;
 }

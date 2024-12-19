@@ -112,7 +112,10 @@ impl Embedder for DefaultEmbedder {
             .map_err(|e| EmbedderError::InitializationFailed(e.to_string()))
     }
 
-    async fn generate_embeddings_with_cache(&self, text: &str) -> Result<Vec<f32>, EmbedderError> {
+    async fn generate_embeddings_with_cache(
+        &self,
+        texts: &[&str]
+    ) -> Result<Vec<Vec<f32>>, EmbedderError> {
         // Ensure model is initialized, uses cached version
         let model = self.cached_model.get_or_try_init(|| async {
             self.create_model().await.map_err(|e|
@@ -120,42 +123,45 @@ impl Embedder for DefaultEmbedder {
             )
         }).await?;
 
-        let text_owned = text.to_owned();
+        let texts_owned: Vec<String> = texts
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
         let model_clone = Arc::clone(model);
 
         // Generate embeddings in a blocking task
-        let embedding = task
+        let embeddings = task
             ::spawn_blocking(move || {
                 let model_guard = futures::executor::block_on(model_clone.lock());
-                model_guard.encode(&[&text_owned])
+                model_guard.encode(&texts_owned)
             }).await
             .map_err(|e| EmbedderError::TaskError(e))?
             .map_err(|e| EmbedderError::RustBertError(e))?;
 
-        embedding
-            .into_iter()
-            .next()
-            .ok_or(EmbedderError::EmbeddingGenerationFailed("No embedding generated".to_string()))
+        Ok(embeddings)
     }
-    async fn generate_embeddings_on_demand(&self, text: &str) -> Result<Vec<f32>, EmbedderError> {
+    async fn generate_embeddings_on_demand(
+        &self,
+        text: &[&str]
+    ) -> Result<Vec<Vec<f32>>, EmbedderError> {
         // Create a new model instance for this specific call
         let model = self.create_model().await?;
 
-        let text_owned = text.to_owned();
+        let text_owned: Vec<String> = text
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
         let model_clone = Arc::clone(&model);
 
         // Generate embeddings in a blocking task
         let embedding = task
             ::spawn_blocking(move || {
                 let model_guard = futures::executor::block_on(model_clone.lock());
-                model_guard.encode(&[&text_owned])
+                model_guard.encode(&text_owned)
             }).await
             .map_err(|e| EmbedderError::TaskError(e))?
             .map_err(|e| EmbedderError::RustBertError(e))?;
 
-        embedding
-            .into_iter()
-            .next()
-            .ok_or(EmbedderError::EmbeddingGenerationFailed("No embedding generated".to_string()))
+        Ok(embedding)
     }
 }

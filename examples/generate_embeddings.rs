@@ -10,27 +10,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model = EmbeddingModels::Text(TextEmbeddingModels::MiniLMV6);
 
     // Create an embedding builder with the chosen model
-    let embedder = EmbeddingBuilder::new(model)
-        .with_text("Hello, world!")
-        .with_text("This is a sample sentence for embedding.")
-        .build_embedder();
-
+    let embedder = EmbeddingBuilder::new(model).build_embedder().await?;
     // Initialize the embedder (downloads model files if not present)
-    embedder.initialize().await?;
+    // Define a batch of texts to embed
+    let texts = vec![
+        "Hello, world!",
+        "This is a sample sentence for embedding.",
+        "Another example sentence."
+    ];
 
-    // Generate embeddings for the texts
-    let embedding1 = embedder.generate_embeddings_with_cache("Hello, world!").await?;
-    let embedding2 = embedder.generate_embeddings_with_cache(
-        "This is a sample sentence for embedding."
-    ).await?;
+    let embeddings = embedder.generate_embeddings_with_cache(&texts).await?;
 
     // Print out the embeddings
-    println!("Embedding 1 length: {}", embedding1.len());
-    println!("Embedding 2 length: {}", embedding2.len());
-
-    // Optional: Print first few dimensions of each embedding
-    println!("Embedding 1 first 5 dimensions: {:?}", &embedding1[..5]);
-    println!("Embedding 2 first 5 dimensions: {:?}", &embedding2[..5]);
+    for (i, embedding) in embeddings.iter().enumerate() {
+        println!("Embedding {} length: {}", i + 1, embedding.len());
+        // Optional: Print first few dimensions of each embedding
+        println!("Embedding {} first 5 dimensions: {:?}", i + 1, &embedding[..5]);
+    }
 
     Ok(())
 }

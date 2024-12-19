@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     let system_prompt_3 = "You are a summarizer for analyzed content.";
 
     // Define user prompts for each agent
-    let user_prompt_1 = "Generate content on the topic - Future of AI agentix framework";
+    let user_prompt_1 = "Generate content on the topic - Future of AI agents";
     let user_prompt_2 = "Analyze the generated content.";
     let user_prompt_3 = "Summarize the analysis.";
 
@@ -92,13 +92,7 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     // Access the memory logs
     let logs = chain.memory_logs();
     for log in logs {
-        println!(
-            "Agent: {}, Input: {}, Output: {}, Timestamp: {:?}",
-            log.agent_name,
-            log.input,
-            log.output,
-            log.timestamp
-        );
+        println!("Agent: {}, Timestamp: {:?}", log.agent_name, log.timestamp);
     }
     Ok(())
 }

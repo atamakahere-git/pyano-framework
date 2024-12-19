@@ -2,7 +2,7 @@
 
 ```rust
 // Local usage
-let manager = Arc::new(ModelManagerImpl::new());
+let manager = Arc::new(ModelManager::new());
 
 let  llama_extra_args = HashMap::new();
 
@@ -42,7 +42,7 @@ Application -> ModelManagerClient -> HTTP -> ModelManagerServer -> ModelManager 
 ### Server binary provides
 
 ```rust
-let manager = Arc::new(ModelManagerImpl::new(config));
+let manager = Arc::new(ModelManager::new(config));
 let server = ModelManagerServer::new(manager);
 server.run("127.0.0.1:8080").await?;
 ```

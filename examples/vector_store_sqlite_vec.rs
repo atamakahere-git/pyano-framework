@@ -21,12 +21,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create an embedding builder with the chosen model
     let embedder = EmbeddingBuilder::new(model).build_embedder().await?;
 
-    let database_url = std::env::var("DATABASE_URL").unwrap_or("sqlite::memory:".to_string());
-
     // Initialize the Sqlite Vector Store
     let store = StoreBuilder::new()
         .embedder(embedder)
-        .connection_url(database_url)
+        .db_name("micro_app")
         .table("documents")
         .vector_dimensions(1536)
         .build().await

@@ -1,4 +1,4 @@
-use std::{ error::Error, str::FromStr, sync::Arc };
+use std::{ error::Error, str::FromStr, sync::Arc, fs };
 
 use sqlx::{ sqlite::{ SqliteConnectOptions, SqlitePoolOptions }, Pool, Sqlite };
 
@@ -30,8 +30,24 @@ impl StoreBuilder {
         self
     }
 
-    pub fn connection_url<S: Into<String>>(mut self, connection_url: S) -> Self {
+    pub fn in_memory(mut self) -> Self {
+        let connection_url = std::env::var("DATABASE_URL").unwrap_or("sqlite::memory:".to_string());
+
         self.connection_url = Some(connection_url.into());
+        self.pool = None;
+        self
+    }
+
+    pub fn db_name<S: Into<String>>(mut self, db_name: S) -> Self {
+        let home_directory = dirs::home_dir().unwrap();
+        let root_pyano_dir = home_directory.join(".pyano");
+        let pyano_data_dir = root_pyano_dir.join("database");
+        if !pyano_data_dir.exists() {
+            fs::create_dir_all(&pyano_data_dir).unwrap();
+        }
+        let file_path = pyano_data_dir.join(db_name.into());
+
+        self.connection_url = Some(format!("sqlite://{}", file_path.display()));
         self.pool = None;
         self
     }
@@ -52,7 +68,11 @@ impl StoreBuilder {
     }
 
     // Finalize the builder and construct the Store object
-    pub async fn build(self) -> Result<Store, Box<dyn Error>> {
+    pub async fn build(mut self) -> Result<Store, Box<dyn Error>> {
+        if self.connection_url.is_none() {
+            self = self.in_memory();
+        }
+
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
         }

@@ -6,13 +6,21 @@ pub enum ModelError {
 
     #[error("Model already loaded: {0}")] ModelAlreadyLoaded(String),
 
-    #[error("Failed to start model process: {0}")] ProcessError(String),
+    #[error("Process error: {0}")] ProcessError(String),
 
-    #[error("Invalid configuration: {0}")] ConfigError(String),
+    #[error("Configuration error: {0}")] ConfigError(String),
 
-    #[error("HTTP error: {0}")] HttpError(#[from] reqwest::Error),
+    #[error("Request failed: {0}")] RequestError(#[from] reqwest::Error),
+
+    #[error("Failed to deserialize response: {0}")] DeserializationError(#[from] serde_json::Error),
+
+    #[error("Server error: {0}")] ServerError(String),
+
+    #[error("Invalid model configuration: {0}")] InvalidConfig(String),
+
+    #[error("Memory error: {0}")] MemoryError(String),
 
     #[error("IO error: {0}")] IoError(#[from] std::io::Error),
 }
 
-pub type Result<T> = std::result::Result<T, ModelError>;
+pub type ModelResult<T> = std::result::Result<T, ModelError>;

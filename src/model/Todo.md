@@ -1,1 +1,2 @@
--   [ ] Fix types for client, ModelManagerImpl
+-   [ ] Add options to unload after use
+-   [ ] Add cleanup all models

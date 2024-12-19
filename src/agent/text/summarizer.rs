@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use crate::model::ModelManagerImpl;
+use crate::model::ModelManagerInterface;
 use crate::types::common::Message;
 
 pub struct SummarizerAgent {
     name: String,
-    model_manager: Arc<ModelManagerImpl>,
+    model_manager: Arc<dyn ModelManagerInterface>,
 }
 
 impl SummarizerAgent {
-    pub fn new(name: String, model_manager: Arc<ModelManagerImpl>) -> Self {
+    pub fn new(name: String, model_manager: Arc<dyn ModelManagerInterface>) -> Self {
         SummarizerAgent {
             name,
             model_manager,

@@ -13,7 +13,7 @@ path = "src/lib.rs"
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
-thiserror = "1.0"
+thiserror = "2.0.8"
 async-trait = "0.1"
 chrono = { version = "0.4.39", features = ["serde"]}
 reqwest = { version = "0.12.9", features = ["stream", "json"] }
@@ -27,6 +27,10 @@ url = "2.5.4"
 scraper = "0.22.0"
 env_logger = "0.11.5"
 regex = "1.11.1"
+sysinfo = "0.33.0"
+libc = "0.2.169"
+parking_lot = "0.12.3"
+
 rust-bert = "0.23.0"
 dirs = "5.0.1"
 tch = { version = "0.17.0", features = ["download-libtorch"] }

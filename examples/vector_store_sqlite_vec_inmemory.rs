@@ -11,8 +11,7 @@ use pyano::embedding::{
     embedding_models::{ EmbeddingModels, TextEmbeddingModels },
     embedder_builder::EmbeddingBuilder,
 };
-
-use std::io::Write;
+use serde_json::json;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,8 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize the Sqlite Vector Store
     let store = StoreBuilder::new()
-        .embedder(embedder)
-        .db_name("micro_app")
+        .embedder(embedder.clone())
         .table("documents")
         .build().await
         .unwrap();
@@ -65,17 +63,61 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "The French Revolution was a period of radical social and political change in France from 1789 to 1799."
     ).with_metadata(metadata3);
 
+    // Third document's metadata
+    let mut metadata4 = HashMap::new();
+    metadata4.insert("author".to_string(), Value::String("Mason".to_string()));
+    metadata4.insert("category".to_string(), Value::String("Physics".to_string()));
+    metadata4.insert("published_year".to_string(), Value::Number((2020).into()));
+
+    // Create the third document (completely different content)
+    let document4 = Document::new(
+        "Quantum mechanics explains the fundamental principles governing particles at the atomic level."
+    ).with_metadata(metadata4);
+
+    // Third document's metadata
+    let mut metadata5 = HashMap::new();
+    metadata5.insert("author".to_string(), Value::String("Alex".to_string()));
+    metadata5.insert("category".to_string(), Value::String("Science".to_string()));
+    metadata5.insert("published_year".to_string(), Value::Number((2020).into()));
+
+    // Create the third document (completely different content)
+    let document5 = Document::new(
+        "Quantum theory explores the principles that determine the behavior of particles at tiny scales."
+    ).with_metadata(metadata5);
+
+    // Third document's metadata
+    let mut metadata6 = HashMap::new();
+    metadata6.insert("author".to_string(), Value::String("Duke".to_string()));
+    metadata6.insert("category".to_string(), Value::String("Quantum mechanics".to_string()));
+    metadata6.insert("published_year".to_string(), Value::Number((2020).into()));
+
+    // Create the third document (completely different content)
+    let document6 = Document::new(
+        "Quantum physics investigates the nature of particles and waves in the subatomic realm."
+    ).with_metadata(metadata6);
+
     store
-        .add_documents(&vec![document1, document2, document3], &VecStoreOptions::default()).await
+        .add_documents(
+            &vec![document1, document2, document3, document4, document5, document6],
+            &VecStoreOptions::default()
+        ).await
         .unwrap();
 
-    // Ask for user input
-    print!("Query> ");
-    std::io::stdout().flush().unwrap();
-    let mut query = String::new();
-    std::io::stdin().read_line(&mut query).unwrap();
+    // // Ask for user input
+    // print!("Query> ");
+    // std::io::stdout().flush().unwrap();
+    let query = String::from(
+        "Quantum physics describes the behavior of matter and energy on a microscopic scale."
+    );
+    // std::io::stdin().read_line(&mut query).unwrap();
 
-    let results = store.similarity_search(&query, 2, &VecStoreOptions::default()).await.unwrap();
+    // let options = VecStoreOptions::new();
+
+    let options = VecStoreOptions::new()
+        .with_filters(json!({"category": "Science"}))
+        .with_embedder(embedder);
+
+    let results = store.similarity_search(&query, 2, &options).await.unwrap();
 
     if results.is_empty() {
         println!("No results found.");

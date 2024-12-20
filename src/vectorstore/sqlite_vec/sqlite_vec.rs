@@ -89,6 +89,26 @@ impl Store {
             _ => Err("Invalid filters format".into()), // Filters provided but not in the expected format
         }
     }
+
+    fn build_metadata_query(&self, filter: &HashMap<String, Value>) -> String {
+        if filter.is_empty() {
+            return "TRUE".to_string();
+        }
+
+        filter
+            .iter()
+            .map(|(k, v)| {
+                // Handle different JSON value types appropriately
+                match v {
+                    Value::String(s) => format!("json_extract(metadata, '$.{}') = '{}'", k, s),
+                    Value::Number(n) => format!("json_extract(metadata, '$.{}') = {}", k, n),
+                    Value::Bool(b) => format!("json_extract(metadata, '$.{}') = {}", k, b),
+                    _ => format!("json_extract(metadata, '$.{}') = {}", k, v),
+                }
+            })
+            .collect::<Vec<String>>()
+            .join(" AND ")
+    }
 }
 
 #[async_trait]
@@ -145,7 +165,7 @@ impl VectorStore for Store {
         }
 
         tx.commit().await?;
-
+        println!("Documents added");
         Ok(ids)
     }
 
@@ -168,30 +188,39 @@ impl VectorStore for Store {
 
         let filter = self.get_filters(opt)?;
 
-        let mut metadata_query = filter
-            .iter()
-            .map(|(k, v)| format!("json_extract(e.metadata, '$.{}') = '{}'", k, v))
-            .collect::<Vec<String>>()
-            .join(" AND ");
-
-        if metadata_query.is_empty() {
-            metadata_query = "TRUE".to_string();
-        }
-
+        let metadata_query = self.build_metadata_query(&filter);
+        println!("Using metadata query = {}", metadata_query);
+        // let rows = sqlx
+        //     ::query(
+        //         &format!(
+        //             r#"SELECT
+        //             text,
+        //             metadata,
+        //             distance
+        //         FROM {table} e
+        //         INNER JOIN vec_{table} v on v.rowid = e.rowid
+        //         WHERE v.text_embedding match '{query_vector}' AND k = ? AND {metadata_query}
+        //         ORDER BY distance
+        //         LIMIT ?"#
+        //         )
+        //     )
+        //     .bind(limit as i32)
+        //     .fetch_all(&self.pool).await?;
         let rows = sqlx
             ::query(
                 &format!(
                     r#"SELECT
-                    text,
-                    metadata,
-                    distance
+                    e.text,
+                    e.metadata,
+                    v.distance
                 FROM {table} e
                 INNER JOIN vec_{table} v on v.rowid = e.rowid
-                WHERE v.text_embedding match '{query_vector}' AND k = ? AND {metadata_query}
-                ORDER BY distance
+                WHERE v.text_embedding match ? AND k = ? AND {metadata_query}
+                ORDER BY v.distance ASC
                 LIMIT ?"#
                 )
             )
+            .bind(query_vector.to_string()) // Ensure proper conversion
             .bind(limit as i32)
             .bind(limit as i32)
             .fetch_all(&self.pool).await?;

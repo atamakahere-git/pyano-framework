@@ -16,6 +16,7 @@ use tch::Device;
 
 use super::embedding_models::EmbeddingModels;
 
+#[derive(Clone)]
 pub struct DefaultEmbedder {
     model: EmbeddingModels,
     model_path: PathBuf,

@@ -1,14 +1,17 @@
+#[derive(Clone)]
 pub enum TextEmbeddingModels {
     MiniLMV6,
     MiniLMV12,
     // Add other text embedding models here in the future
 }
 
+#[derive(Clone)]
 pub enum ImageEmbeddingModels {
     CLIP, // Example for image embedding model
     // Add other image embedding models here in the future
 }
 
+#[derive(Clone)]
 pub enum EmbeddingModels {
     Text(TextEmbeddingModels),
     Image(ImageEmbeddingModels),
@@ -102,6 +105,20 @@ impl EmbeddingModels {
             EmbeddingModels::Image(model) =>
                 match model {
                     ImageEmbeddingModels::CLIP => "CLIP",
+                }
+        }
+    }
+
+    pub fn dimensions(&self) -> i32 {
+        match self {
+            EmbeddingModels::Text(model) =>
+                match model {
+                    TextEmbeddingModels::MiniLMV6 => 384,
+                    TextEmbeddingModels::MiniLMV12 => 768,
+                }
+            EmbeddingModels::Image(model) =>
+                match model {
+                    ImageEmbeddingModels::CLIP => 512,
                 }
         }
     }

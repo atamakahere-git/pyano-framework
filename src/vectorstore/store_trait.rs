@@ -29,29 +29,29 @@ impl<VS> From<VS> for Box<dyn VectorStore> where VS: 'static + VectorStore {
     }
 }
 
-#[macro_export]
-macro_rules! add_documents {
-    ($obj:expr, $docs:expr) => {
-        $obj.add_documents($docs, &$crate::vectorstore::VecStoreOptions::default())
-    };
-    ($obj:expr, $docs:expr, $opt:expr) => {
-        $obj.add_documents($docs, $opt)
-    };
-}
+// #[macro_export]
+// macro_rules! add_documents {
+//     ($obj:expr, $docs:expr) => {
+//         $obj.add_documents($docs, &$crate::vectorstore::VecStoreOptions::default())
+//     };
+//     ($obj:expr, $docs:expr, $opt:expr) => {
+//         $obj.add_documents($docs, $opt)
+//     };
+// }
 
-#[macro_export]
-macro_rules! similarity_search {
-    ($obj:expr, $query:expr, $limit:expr) => {
-        $obj.similarity_search(
-            $query,
-            $limit,
-            &$crate::vectorstore::VecStoreOptions::default(),
-        )
-    };
-    ($obj:expr, $query:expr, $limit:expr, $opt:expr) => {
-        $obj.similarity_search($query, $limit, $opt)
-    };
-}
+// #[macro_export]
+// macro_rules! similarity_search {
+//     ($obj:expr, $query:expr, $limit:expr) => {
+//         $obj.similarity_search(
+//             $query,
+//             $limit,
+//             &$crate::vectorstore::VecStoreOptions::default(),
+//         )
+//     };
+//     ($obj:expr, $query:expr, $limit:expr, $opt:expr) => {
+//         $obj.similarity_search($query, $limit, $opt)
+//     };
+// }
 
 // Retriever is a retriever for vector stores.
 pub struct DocumentRetriever {

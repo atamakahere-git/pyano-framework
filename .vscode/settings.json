@@ -3,5 +3,6 @@
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "jinxdash.prettier-rust"
-  }
+  },
+  "rust-analyzer.cargo.features": ["sqlx"]
 }

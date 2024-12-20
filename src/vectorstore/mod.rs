@@ -1,7 +1,7 @@
 mod options;
 pub mod sqlite_vec;
 
-mod vectorstore;
+pub mod store_trait;
 
 pub use options::*;
-pub use vectorstore::*;
+pub use store_trait::*;

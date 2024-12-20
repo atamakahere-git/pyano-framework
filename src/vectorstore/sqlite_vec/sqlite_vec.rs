@@ -5,7 +5,7 @@ use serde_json::{ json, Value };
 use sqlx::{ Pool, Row, Sqlite };
 
 use crate::{
-    embedding::embedder_trait::Embedder,
+    embedding::{ self, embedder_trait::Embedder },
     schemas::document::Document,
     vectorstore::{ VecStoreOptions, VectorStore },
 };
@@ -157,7 +157,14 @@ impl VectorStore for Store {
     ) -> Result<Vec<Document>, Box<dyn Error>> {
         let table = &self.table;
 
-        let query_vector = json!(self.embedder.generate_embeddings_on_demand(&[query]).await?);
+        let embeddings = self.embedder.generate_embeddings_on_demand(&[query]).await?;
+
+        let query_vector = match embeddings.get(0) {
+            Some(query_embeddings) => json!(query_embeddings),
+            None => {
+                return Err("No embeddings returned".into());
+            } // Handle the case where no embeddings are returned        }
+        };
 
         let filter = self.get_filters(opt)?;
 

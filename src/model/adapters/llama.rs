@@ -27,13 +27,9 @@ impl LlamaProcess {
     pub async fn getcmd(&mut self) {
         /* ToDO Implement server based on machine type */
         let mut cmd = if cfg!(target_os = "macos") {
-            Command::new(
-                "/home/deadbytes/Documents/Pyano/composAIble-agents/src/model/adapters/llama/arm64/llama-server"
-            )
+            Command::new("./src/model/adapters/llama/arm64/llama-server")
         } else {
-            Command::new(
-                "/home/deadbytes/Documents/Pyano/composAIble-agents/src/model/adapters/llama/ubuntu/llama-server"
-            )
+            Command::new("./src/model/adapters/llama/ubuntu/llama-server")
         };
 
         // Configure command based on adapter config

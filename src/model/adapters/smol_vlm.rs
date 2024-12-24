@@ -34,7 +34,15 @@ impl SmolVlmProcess {
 
         self.status = ModelStatus::Loading;
 
-        let mut cmd = Command::new("./smolVLM-server");
+        let mut cmd = if cfg!(target_os = "macos") {
+            Command::new(
+                "/home/deadbytes/Documents/Pyano/composAIble-agents/src/model/adapters/vision/arm64/smolVLM-server"
+            )
+        } else {
+            Command::new(
+                "/home/deadbytes/Documents/Pyano/composAIble-agents/src/model/adapters/vision/ubuntu/smolVLM-server"
+            )
+        };
 
         // Configure command based on adapter config
         cmd.arg("vision plain")

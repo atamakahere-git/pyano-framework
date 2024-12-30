@@ -1,6 +1,6 @@
 # 🚀 Pyano Framework
 
-A composable, resource-efficient framework for building AI applications locally in Rust. Inspired by langchain-rs[https://github.com/Abraxas-365/langchain-rust]
+A composable, resource-efficient framework for building AI applications locally in Rust. Inspired by [langchain-rs](https://github.com/Abraxas-365/langchain-rust)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
